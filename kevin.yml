@@ -1,0 +1,122 @@
+commands: 
+  - name: "restore"
+    parent: "gpg"
+    short: "restore key into the gpp key chain"
+    flags:
+      - name: backup
+        short: "p"
+        value: "./gpg-backup"
+        usage: "path to the gpg backup directory"
+    cmd: |
+      echo "Restoring keychain from ./gpg-backup"
+      gpg --import {{ .GetFlag "backup" }}/public.gpg
+      gpg --import {{ .GetFlag "backup" }}/private.gpg
+      gpg --import-ownertrust ./gpg-backup/trust.gpg
+    shell: "/bin/bash"
+
+  - name: "create"
+    parent: "gpg"
+    short: "create a new gpg key"
+    flags:
+      - name: kid
+        short: "k"
+        usage: "identifier for the gpg key"
+        required: true
+    shell: "/bin/bash"
+    cmd: |
+       echo 'Generating a new gpg key for {{ .GetFlag "kid" }}'
+       config="Key-Type: 1\n"
+       config+="Key-Length: 2048\n"
+       config+="Subkey-Type: 1\n"
+       config+="Subkey-Length: 2048\n"
+       config+="Name-Real: $(echo {{ .GetFlag "kid" }} | sed -E 's/(.*)@.*/\1/g')\n"
+       config+="Name-Email: {{ .GetFlag "kid" }}\n"
+       config+="Expire-Date: $(date --iso-8601=s -d '+5weeks' | tr -d ':-' | cut -c 1-15)"
+       echo -e "$config" > /tmp/gpg-key.conf
+       gpg --batch --gen-key /tmp/gpg-key.conf
+      
+  - name: "export"
+    parent: "gpg"
+    short: "export gpg public key"
+    flags:
+      - name: kid
+        short: "k"
+        usage: "identifier for the gpg key"
+        required: true
+    shell: "/bin/bash"   
+    cmd: |
+      gpg --armor --export "$(gpg --list-keys --with-colons {{ .GetFlag "kid" }} | awk -F: '/^pub:/ {print $5}')"
+      
+  - name: "renew"
+    parent: "gpg"
+    short: "renew gpg keys"
+    flags:
+      - name: kid
+        short: "k"
+        usage: "identifier for the gpg key"
+        required: true
+    shell: "/bin/bash"
+    cmd: |
+      echo "Renewing key chain for next \5w (pk)"
+      gpg --quick-set-expire "$(gpg --list-secret-keys --with-colons "{{ .GetFlag "kid" }}" | awk -F: '/^fpr/ {print $10}' | awk 'NR==1{print $1}')" 5w
+      
+      echo "Renewing key chain for next \5w (sk)"
+      gpg --quick-set-expire "$(gpg --list-secret-keys --with-colons "{{ .GetFlag "kid" }}" | awk -F: '/^fpr/ {print $10}' | awk 'NR==1{print $1}')" 5w '*'
+      
+  - name: "backup"
+    parent: "gpg"
+    short: "backup a gpg key"
+    flags:
+      - name: kid
+        short: "k"
+        usage: "identifier for the gpg key"
+        required: true
+    shell: "/bin/bash"
+    cmd: |
+      storage={{ .GetFlag "kid" }}-$(date +%Y%m%d)
+
+      echo "Backing up keychain"
+      mkdir -p "./${storage}"
+      gpg --export --export-options backup --output "./${storage}/public.gpg" "{{ .GetFlag "kid" }}"
+      gpg --export-secret-keys --export-options backup --output "./${storage}/private.gpg" "$kid"
+      gpg --export-ownertrust > "./${storage}/trust.gpg"
+
+      tar -cvf "${storage}.tar" ."/${storage}"
+      echo "Backup files created at ./${storage}"
+      
+  - name: "date"
+    parent: "gpg"
+    short: "show gpg expiration date"
+    flags:
+      - name: kid
+        short: "k"
+        usage: "identifier for the gpg key"
+        required: true
+    shell: "/bin/bash"
+    cmd: |
+      expire_at=$(gpg --list-keys  --with-colons "{{ .GetFlag "kid" }}" | awk -F: '/^pub/ {print $7}' | xargs -i{} date -d @{} +%Y-%m-%d)
+      echo "{{ .GetFlag "kid" }} (Expires At: ${expire_at})"
+      
+  - name: "git"
+    parent: "gpg"
+    short: "configure git with gpg signing"
+    flags:
+      - name: kid
+        short: "k"
+        usage: "identifier for the gpg key"
+        required: true
+    shell: "/bin/bash"
+    cmd: |
+      fgp=$(gpg --list-keys --with-colons "{{ .GetFlag "kid" }}" | awk -F: '/^pub:/ {print $5}')
+      if [[ -z $fgp ]]; then
+        echo "Unable to load fingerprint for key ${kid}"
+        exit 1
+      fi;
+      
+      echo "Setting git gpg configuration"
+      git config user.email "$kid"
+      git config user.name "$(echo "{{ .GetFlag "kid" }}" | sed -E 's/(.*)@.*/\1/g')"
+      git config user.signingkey "$fgp"
+      git config gpg.format openpgp
+      git config commit.gpgsign true
+      git config tag.gpgsign true
