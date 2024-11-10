@@ -12,7 +12,6 @@ commands:
       gpg --import {{ .GetFlag "backup" }}/public.gpg
       gpg --import {{ .GetFlag "backup" }}/private.gpg
       gpg --import-ownertrust ./gpg-backup/trust.gpg
-    shell: "/bin/bash"
 
   - name: "create"
     parent: "gpg"
@@ -22,7 +21,6 @@ commands:
         short: "k"
         usage: "identifier for the gpg key"
         required: true
-    shell: "/bin/bash"
     cmd: |
        echo 'Generating a new gpg key for {{ .GetFlag "kid" }}'
        config="Key-Type: 1\n"
@@ -42,8 +40,7 @@ commands:
       - name: kid
         short: "k"
         usage: "identifier for the gpg key"
-        required: true
-    shell: "/bin/bash"   
+        required: true   
     cmd: |
       gpg --armor --export "$(gpg --list-keys --with-colons {{ .GetFlag "kid" }} | awk -F: '/^pub:/ {print $5}')"
       
@@ -55,7 +52,6 @@ commands:
         short: "k"
         usage: "identifier for the gpg key"
         required: true
-    shell: "/bin/bash"
     cmd: |
       echo "Renewing key chain for next \5w (pk)"
       gpg --quick-set-expire "$(gpg --list-secret-keys --with-colons "{{ .GetFlag "kid" }}" | awk -F: '/^fpr/ {print $10}' | awk 'NR==1{print $1}')" 5w
@@ -71,7 +67,6 @@ commands:
         short: "k"
         usage: "identifier for the gpg key"
         required: true
-    shell: "/bin/bash"
     cmd: |
       storage={{ .GetFlag "kid" }}-$(date +%Y%m%d)
 
@@ -87,35 +82,31 @@ commands:
   - name: "date"
     parent: "gpg"
     short: "show gpg expiration date"
-    flags:
+    args:
       - name: kid
-        short: "k"
         usage: "identifier for the gpg key"
         required: true
-    shell: "/bin/bash"
     cmd: |
-      expire_at=$(gpg --list-keys  --with-colons "{{ .GetFlag "kid" }}" | awk -F: '/^pub/ {print $7}' | xargs -i{} date -d @{} +%Y-%m-%d)
-      echo "{{ .GetFlag "kid" }} (Expires At: ${expire_at})"
+      expire_at=$(gpg --list-keys  --with-colons "{{ .GetArg "kid" }}" | awk -F: '/^pub/ {print $7}' | xargs -i{} date -d @{} +%Y-%m-%d)
+      echo "{{ .GetArg "kid" }} (Expires At: ${expire_at})"
       
   - name: "git"
     parent: "gpg"
     short: "configure git with gpg signing"
-    flags:
+    args:
       - name: kid
-        short: "k"
         usage: "identifier for the gpg key"
         required: true
-    shell: "/bin/bash"
     cmd: |
-      fgp=$(gpg --list-keys --with-colons "{{ .GetFlag "kid" }}" | awk -F: '/^pub:/ {print $5}')
+      fgp=$(gpg --list-keys --with-colons "{{ .GetArg "kid" }}" | awk -F: '/^pub:/ {print $5}')
       if [[ -z $fgp ]]; then
-        echo "Unable to load fingerprint for key ${kid}"
+        echo "Unable to load fingerprint for key {{ .GetArg "kid" }}"
         exit 1
       fi;
       
       echo "Setting git gpg configuration"
-      git config user.email "$kid"
-      git config user.name "$(echo "{{ .GetFlag "kid" }}" | sed -E 's/(.*)@.*/\1/g')"
+      git config user.email "{{ .GetArg "kid" }}"
+      git config user.name "$(echo "{{ .GetArg "kid" }}" | sed -E 's/(.*)@.*/\1/g')"
       git config user.signingkey "$fgp"
       git config gpg.format openpgp
       git config commit.gpgsign true

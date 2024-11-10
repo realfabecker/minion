@@ -7,6 +7,7 @@ import (
 	"github.com/realfabecker/kevin/internal/core/ports"
 	"os"
 	"os/exec"
+	"runtime"
 	"strings"
 )
 
@@ -43,25 +44,25 @@ func (c *Cli) Run(cmd *domain.Cmd, dryRun bool) error {
 	}
 
 	if dryRun {
-		fmt.Println(script)
+		fmt.Print(script)
 		return nil
 	}
 
-	if cmd.Shell == "cmd" {
+	if runtime.GOOS == "windows" {
 		return c.runE(CliRunOpts{
-			Command:   cmd.Shell,
+			Command:   "cmd",
 			Attach:    true,
 			Arguments: []string{"/c", strings.TrimSpace(script)},
 		})
 	}
-	if cmd.Shell == "/bin/bash" {
+	if runtime.GOOS == "linux" {
 		return c.runE(CliRunOpts{
-			Command:   cmd.Shell,
+			Command:   "/bin/bash",
 			Attach:    true,
 			Arguments: []string{"-c", strings.TrimSpace(script)},
 		})
 	}
-	return fmt.Errorf("unsupported shell: %s", cmd.Shell)
+	return fmt.Errorf("unsupported runtime: %s", runtime.GOOS)
 
 }
 

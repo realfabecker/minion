@@ -5,8 +5,8 @@ type Cmd struct {
 	Parent string `yaml:"parent"`
 	Short  string `yaml:"short"`
 	Cmd    string `yaml:"cmd"`
-	Shell  string `yaml:"shell"`
 	Flags  []Flag `yaml:"flags"`
+	Args   []Arg  `yaml:"args"`
 }
 
 type Flag struct {
@@ -14,6 +14,12 @@ type Flag struct {
 	Short    string `yaml:"short"`
 	Value    string `yaml:"value"`
 	Usage    string `yaml:"usage"`
+	Required bool   `yaml:"required"`
+}
+
+type Arg struct {
+	Name     string `yaml:"name"`
+	Value    string `yaml:"value"`
 	Required bool   `yaml:"required"`
 }
 
@@ -33,4 +39,32 @@ func (c *Cmd) GetFlag(flag string) string {
 		}
 	}
 	return ""
+}
+
+func (c *Cmd) SetArg(arg string, value string) {
+	for i, a := range c.Args {
+		if a.Name == arg {
+			c.Args[i].Value = value
+			break
+		}
+	}
+}
+
+func (c *Cmd) GetArg(arg string) string {
+	for _, a := range c.Args {
+		if a.Name == arg {
+			return a.Value
+		}
+	}
+	return ""
+}
+
+func (c *Cmd) GetNofRequiredArgs() int {
+	total := 0
+	for _, a := range c.Args {
+		if a.Required {
+			total += 1
+		}
+	}
+	return total
 }
