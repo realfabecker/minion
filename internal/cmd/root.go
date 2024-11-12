@@ -6,15 +6,15 @@ import (
 	"github.com/realfabecker/kevin/internal/cmd/pll"
 	"github.com/realfabecker/kevin/internal/cmd/run"
 	"github.com/realfabecker/kevin/internal/core/domain"
-	"log"
-	"os"
-
 	"github.com/spf13/cobra"
 )
 
+var (
+	console = logger.NewConsoleLogger()
+)
+
 func readConfig() ([]domain.Cmd, error) {
-	echo := logger.NewConsoleLogger("kevin", os.Stdout)
-	repo := kevin.NewYmlCommandRepository(echo)
+	repo := kevin.NewYmlCommandRepository(console)
 	return repo.List()
 }
 
@@ -27,7 +27,9 @@ func newRootCmd(cmds []domain.Cmd) *cobra.Command {
 			DisableDefaultCmd: true,
 		},
 	}
-	root.SetHelpCommand(&cobra.Command{Hidden: true})
+	root.SetHelpCommand(&cobra.Command{
+		Hidden: true,
+	})
 	root.AddCommand(pll.NewRunCmd())
 	if len(cmds) > 0 {
 		run.AttachCmd(root, cmds)
@@ -36,11 +38,18 @@ func newRootCmd(cmds []domain.Cmd) *cobra.Command {
 }
 
 func Execute() {
+	defer func() {
+		if r := recover(); r != nil {
+			console.Fataln(r)
+		}
+	}()
+
 	cmds, err := readConfig()
 	if err != nil {
-		log.Fatalln(err)
+		console.Fataln(err)
 	}
+
 	if err := newRootCmd(cmds).Execute(); err != nil {
-		log.Fatalln(err)
+		console.Fataln(err)
 	}
 }

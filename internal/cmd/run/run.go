@@ -7,7 +7,6 @@ import (
 	"github.com/realfabecker/kevin/internal/adapters/runner"
 	"github.com/realfabecker/kevin/internal/core/domain"
 	"github.com/spf13/cobra"
-	"os"
 )
 
 var DryRun bool
@@ -32,13 +31,16 @@ func newSubCmd(c domain.Cmd) *cobra.Command {
 			}
 
 			rn := runner.New(runner.NewCliOpts{
-				Logger: logger.NewConsoleLogger("kevin", os.Stdout),
+				Logger: logger.NewConsoleLogger(),
 				Render: render.NewScriptRender(),
 			})
 			return rn.Run(&c, DryRun)
 		},
 	}
 	for _, f := range c.Flags {
+		if f.Short == "" {
+			f.Short = f.Name[:1]
+		}
 		cmd.Flags().StringP(f.Name, f.Short, f.Value, f.Usage)
 		if f.Required {
 			_ = cmd.MarkFlagRequired(f.Name)

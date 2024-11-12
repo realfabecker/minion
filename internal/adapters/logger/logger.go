@@ -3,8 +3,8 @@ package logger
 import (
 	"fmt"
 	"github.com/realfabecker/kevin/internal/core/ports"
-	"io"
 	"log"
+	"os"
 )
 
 type ConsoleLogger struct {
@@ -13,12 +13,11 @@ type ConsoleLogger struct {
 	*log.Logger
 }
 
-func NewConsoleLogger(label string, output io.Writer) ports.Logger {
-	logger := log.New(output, "", 0)
-	logger.SetOutput(output)
+func NewConsoleLogger() ports.Logger {
+	logger := log.New(os.Stdout, "", 0)
 	return ConsoleLogger{
 		level:  getLogLevel(),
-		label:  label,
+		label:  "kevin",
 		Logger: logger,
 	}
 }
@@ -45,6 +44,10 @@ func (l ConsoleLogger) Debug(message string) {
 
 func (l ConsoleLogger) Debugf(format string, a ...interface{}) {
 	l.log(debugLevel, fmt.Sprintf(format, a...))
+}
+
+func (l ConsoleLogger) Fataln(v ...any) {
+	l.Fatalln(v)
 }
 
 func (l ConsoleLogger) log(level logLevel, message string) {
