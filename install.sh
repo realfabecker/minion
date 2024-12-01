@@ -4,7 +4,7 @@ set -e
 # install base configuration
 install_dir="$HOME/.local/bin"
 download_dir=$(mktemp -d)
-download_file=kevin-0.0.1-linux-amd64.tar.gz
+download_file=kevin-0.2.0-linux-amd64.tar.gz
 repo_url=https://api.github.com/repos/realfabecker/kevin/releases/latest
 
 # bash message log with info format
