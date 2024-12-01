@@ -2,6 +2,7 @@ package flagreader
 
 import (
 	"encoding/csv"
+	"fmt"
 	"github.com/realfabecker/kevin/internal/core/ports"
 	"io"
 	"os"
@@ -28,7 +29,7 @@ func (c *csvFlagReader) Read(filePath string) ([]map[string]string, error) {
 			break
 		}
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("csv: unable to load csv file: %w", err)
 		}
 		var m = make(map[string]string)
 		for i, v := range rec {

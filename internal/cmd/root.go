@@ -46,7 +46,7 @@ func Execute() {
 
 	cmds, err := readConfig()
 	if err != nil {
-		console.Fataln(err)
+		console.Warn(err.Error())
 	}
 
 	if err := newRootCmd(cmds).Execute(); err != nil {

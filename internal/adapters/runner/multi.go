@@ -74,7 +74,7 @@ func (m *multi) runCmd(command string, flags map[string]string) error {
 	act := strings.Split(command, " ")
 	if len(flags) > 0 {
 		for k, v := range flags {
-			act = append(act, fmt.Sprintf("--%s=%s", k, v))
+			act = append(act, fmt.Sprintf(`--%s='%s'`, k, v))
 		}
 	}
 	var cmd *exec.Cmd

@@ -46,6 +46,10 @@ func (l ConsoleLogger) Debugf(format string, a ...interface{}) {
 	l.log(debugLevel, fmt.Sprintf(format, a...))
 }
 
+func (l ConsoleLogger) Warn(message string) {
+	l.log(warnLevel, message)
+}
+
 func (l ConsoleLogger) Fataln(v ...any) {
 	l.Fatalln(v)
 }

@@ -9,6 +9,7 @@ type logLevel uint8
 
 const (
 	infoLevel logLevel = iota
+	warnLevel
 	errorLevel
 	debugLevel
 )
@@ -21,6 +22,8 @@ func (l logLevel) String() string {
 		return "INF"
 	case errorLevel:
 		return "ERR"
+	case warnLevel:
+		return "WRN"
 	}
 
 	return "UNKNOWN"

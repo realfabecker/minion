@@ -8,6 +8,7 @@ type Logger interface {
 	Error(message string)
 	Errorf(format string, a ...interface{})
 	Debug(message string)
+	Warn(message string)
 	Fataln(v ...any)
 }
 
