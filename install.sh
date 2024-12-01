@@ -2,7 +2,7 @@
 set -e
 
 # install base configuration
-install_dir="$HOME/.local/bin"
+install_dir="$HOME/bin"
 download_dir=$(mktemp -d)
 download_file=kevin-0.2.0-linux-amd64.tar.gz
 repo_url=https://api.github.com/repos/realfabecker/kevin/releases/latest
