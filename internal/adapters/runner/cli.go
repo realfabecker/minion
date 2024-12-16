@@ -48,6 +48,26 @@ func (c *Cli) Run(cmd *domain.Cmd, dryRun bool) error {
 		return nil
 	}
 
+	if cmd.Lang != "" {
+		f, err := os.CreateTemp(os.TempDir(), "script-")
+		if err != nil {
+			return fmt.Errorf("unable to write temp script: %w", err)
+		}
+		defer func() {
+			if err := os.Remove(f.Name()); err != nil {
+				c.Logger.Error(err.Error())
+			}
+		}()
+		if _, err := f.Write([]byte(script)); err != nil {
+			return fmt.Errorf("uanble to write temp script: %w", err)
+		}
+		return c.runE(CliRunOpts{
+			Command:   cmd.Lang,
+			Attach:    true,
+			Arguments: []string{f.Name()},
+		})
+	}
+
 	if runtime.GOOS == "windows" {
 		return c.runE(CliRunOpts{
 			Command:   "cmd",

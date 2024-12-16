@@ -7,6 +7,7 @@ type Cmd struct {
 	Cmd    string `yaml:"cmd"`
 	Flags  []Flag `yaml:"flags"`
 	Args   []Arg  `yaml:"args"`
+	Lang   string `yaml:"lang"`
 }
 
 type Flag struct {
