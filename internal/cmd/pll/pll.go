@@ -14,7 +14,8 @@ func NewRunCmd() *cobra.Command {
 	}{}
 
 	cmd := &cobra.Command{
-		Use: "run",
+		Use:   "run",
+		Short: "Run script with supplied attributes",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			var flags = make([]map[string]string, 0)
 			if f.File != "" {

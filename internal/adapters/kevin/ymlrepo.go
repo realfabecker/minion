@@ -34,39 +34,61 @@ func (m YmlCommandRepository) Get(name string) (*domain.Cmd, error) {
 
 // List return a list of repositories
 func (m YmlCommandRepository) List() ([]domain.Cmd, error) {
-	d, err := m.source()
-	if err != nil {
-		return nil, fmt.Errorf("list: %w", err)
-	}
-	var src struct {
-		Commands []domain.Cmd `yaml:"commands"`
-	}
-	if err := yaml.Unmarshal(d, &src); err != nil {
-		return nil, fmt.Errorf("list: %w", err)
-	}
-	return src.Commands, nil
-}
-
-// Return the configuration source
-func (m YmlCommandRepository) source() ([]byte, error) {
 	wd, err := os.Getwd()
 	if err != nil {
 		return nil, err
 	}
 
+	var cmds = make([]domain.Cmd, 0)
 	fp := filepath.Join(wd, "kevin.yml")
-	m.Logger.Debug("reading from working path: " + fp)
-	if cd, err := os.ReadFile(fp); err != nil && errors.Is(err, os.ErrNotExist) == false {
-		return nil, err
-	} else if cd != nil {
-		return cd, nil
+	if cm, err := m.source(fp); err != nil {
+		return nil, fmt.Errorf("source(1): %w", err)
+	} else if cm != nil {
+		cmds = append(cmds, cm...)
 	}
 
 	ud, err := os.UserHomeDir()
 	if err != nil {
 		return nil, err
 	}
-	up := filepath.Join(ud, "kevin.yml")
-	m.Logger.Debug("reading from user path: " + up)
-	return os.ReadFile(filepath.Join(ud, "kevin.yml"))
+	up := filepath.Join(ud, ".kevin", "kevin.yml")
+	if cm, err := m.source(up); err != nil {
+		return nil, fmt.Errorf("source(1): %w", err)
+	} else if cm != nil {
+		cmds = append(cmds, cm...)
+	}
+	return cmds, nil
+}
+
+func (m YmlCommandRepository) source(rf string) ([]domain.Cmd, error) {
+	m.Logger.Debug("reading from working ref: " + rf)
+	cd, err := os.ReadFile(rf)
+
+	if err != nil && errors.Is(err, os.ErrNotExist) == false {
+		return nil, err
+	} else if cd == nil {
+		return nil, nil
+	}
+
+	var src struct {
+		Commands []domain.Cmd `yaml:"commands"`
+	}
+	if err := yaml.Unmarshal(cd, &src); err != nil {
+		return nil, fmt.Errorf("list: %w", err)
+	}
+	for i, v := range src.Commands {
+		if v.Ref == "" {
+			continue
+		}
+
+		rp := v.Ref
+		if !filepath.IsAbs(v.Ref) {
+			rp = filepath.Join(filepath.Dir(rf), rp)
+		}
+
+		if src.Commands[i].Pipe, err = m.source(rp); err != nil {
+			return nil, err
+		}
+	}
+	return src.Commands, nil
 }

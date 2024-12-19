@@ -1,5 +1,7 @@
 package domain
 
+import "os"
+
 type Cmd struct {
 	Name   string `yaml:"name"`
 	Parent string `yaml:"parent"`
@@ -8,6 +10,8 @@ type Cmd struct {
 	Flags  []Flag `yaml:"flags"`
 	Args   []Arg  `yaml:"args"`
 	Lang   string `yaml:"lang"`
+	Ref    string `yaml:"ref"`
+	Pipe   []Cmd
 }
 
 type Flag struct {
@@ -68,4 +72,8 @@ func (c *Cmd) GetNofRequiredArgs() int {
 		}
 	}
 	return total
+}
+
+func (c *Cmd) GetEnv(env string) string {
+	return os.Getenv(env)
 }

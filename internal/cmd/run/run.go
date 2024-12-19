@@ -53,22 +53,32 @@ func AttachCmd(root *cobra.Command, cmds []domain.Cmd) {
 	var m = make(map[string]*cobra.Command)
 	for _, v := range cmds {
 		func(c domain.Cmd) {
-			xmd := newSubCmd(c)
-			if c.Parent != "" {
-				if _, ok := m[c.Parent]; ok {
-					m[c.Parent].RunE = nil
-					m[c.Parent].AddCommand(xmd)
-				} else {
-					m[c.Parent] = &cobra.Command{
-						Use: c.Parent,
-					}
-					m[c.Parent].AddCommand(xmd)
-					root.AddCommand(m[c.Parent])
+			if c.Pipe != nil {
+				groupCmd := &cobra.Command{
+					Use:   c.Name,
+					Short: c.Short,
 				}
+				AttachCmd(groupCmd, c.Pipe)
+				root.AddCommand(groupCmd)
 			} else {
-				root.AddCommand(xmd)
+				xmd := newSubCmd(c)
+				if c.Parent != "" {
+					if _, ok := m[c.Parent]; ok {
+						m[c.Parent].RunE = nil
+						m[c.Parent].AddCommand(xmd)
+					} else {
+						m[c.Parent] = &cobra.Command{
+							Use: c.Parent,
+						}
+						m[c.Parent].AddCommand(xmd)
+						root.AddCommand(m[c.Parent])
+					}
+				} else {
+					root.AddCommand(xmd)
+				}
+				m[c.Name] = xmd
 			}
-			m[c.Name] = xmd
+
 		}(v)
 	}
 	root.PersistentFlags().BoolVarP(&DryRun, "dry-run", "d", false, "run in dry run mode")
